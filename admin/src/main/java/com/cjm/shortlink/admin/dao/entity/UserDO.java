@@ -1,11 +1,12 @@
 package com.cjm.shortlink.admin.dao.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.cjm.shortlink.admin.common.database.BaseDO;
 import lombok.Data;
 
 @Data
 @TableName("t_user")
-public class UserDO {
+public class UserDO extends BaseDO {
 
     /**
      * id
