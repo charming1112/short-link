@@ -18,6 +18,7 @@ import com.cjm.shortlink.admin.dto.req.UserRegisterReqDTO;
 import com.cjm.shortlink.admin.dto.req.UserUpdateReqDTO;
 import com.cjm.shortlink.admin.dto.resp.UserLoginRespDTO;
 import com.cjm.shortlink.admin.dto.resp.UserRespDTO;
+import com.cjm.shortlink.admin.service.GroupService;
 import com.cjm.shortlink.admin.service.UserService;
 import org.redisson.api.RBloomFilter;
 import org.redisson.api.RLock;
@@ -39,13 +40,17 @@ public class UserServiceImpl extends ServiceImpl<UserMapper,UserDO> implements U
 
 
     @Autowired
-    RBloomFilter<String> userRegisterCachePenetrationBloomFilter;
+    private RBloomFilter<String> userRegisterCachePenetrationBloomFilter;
 
     @Autowired
-    RedissonClient redissonClient;
+    private RedissonClient redissonClient;
 
     @Autowired
-    StringRedisTemplate stringRedisTemplate;
+    private StringRedisTemplate stringRedisTemplate;
+
+    @Autowired
+    private GroupService groupService;
+
 
     /**
      * 根据用户名获取用户
@@ -97,6 +102,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper,UserDO> implements U
                     throw new ClientException(USER_SAVE_ERROR);
                 }
                 userRegisterCachePenetrationBloomFilter.add(userDO.getUsername());
+                groupService.saveGroup(requestParam.getUsername(),"默认分组");
             }else {
                 throw new ClientException(USER_NAME_EXIST);
             }

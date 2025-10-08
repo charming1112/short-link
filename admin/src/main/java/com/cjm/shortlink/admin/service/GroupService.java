@@ -10,7 +10,9 @@ import com.cjm.shortlink.admin.dto.resp.ShortLinkGroupRespDTO;
 import java.util.List;
 
 public interface GroupService extends IService<GroupDO> {
-    void save(ShortLinkGroupSaveReqDTO shortLinkGroupSaveReqDTO);
+    void saveGroup(String name);
+
+    void saveGroup(String username, String groupName);
 
     List<ShortLinkGroupRespDTO> listGroup();
 
