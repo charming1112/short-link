@@ -27,6 +27,10 @@ import com.cjm.shortlink.project.toolkit.LinkUtil;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.SneakyThrows;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import org.redisson.api.RBloomFilter;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
@@ -36,6 +40,8 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -81,6 +87,7 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
                 .describe(shortLinkCreateReqDTO.getDescribe())
                 .shortUri(shortLinkSuffix)
                 .enableStatus(0)
+                .favicon(getFavicon(shortLinkCreateReqDTO.getOriginUrl()))
                 .fullShortUrl(fullShortUrl)
                 .build();
 
@@ -243,11 +250,13 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
         //查询数据库之前先查询布隆过滤器中是否存在
         boolean contains = shortUriCreateCachePenetrationBloomFilter.contains(fullShortUrl);
         if (!contains) {
+            ((HttpServletResponse) response).sendRedirect("/page/notfound");
             return;
         }
         //如果布隆过滤器存在（误判），再查询缓存中存空值的是否存在该数据，如果存在，说明查询数据库发现为空，然后将值存入空Redis。
         String gotoIsNullShortLink = stringRedisTemplate.opsForValue().get(String.format(GOTO_IS_NULL_SHORT_LINK_KEY, fullShortUrl));
         if (StrUtil.isNotBlank(gotoIsNullShortLink)) {
+            ((HttpServletResponse) response).sendRedirect("/page/notfound");
             return;
         }
 
@@ -271,6 +280,7 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
             if (shortLinkGotoDO == null) {
                 //存入专门存放空数据的Redis中
                 stringRedisTemplate.opsForValue().set(String.format(GOTO_IS_NULL_SHORT_LINK_KEY, fullShortUrl),"-", 30, TimeUnit.MINUTES);
+                ((HttpServletResponse) response).sendRedirect("/page/notfound");
                 return;
             }
             //去数据库中查找是否存在该链接
@@ -287,6 +297,7 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
                 //发现查到的短链接已经失效，就将其存入空缓存中
                 if (shortLinkDO.getValidDate() != null && shortLinkDO.getValidDate().before(new Date())) {
                     stringRedisTemplate.opsForValue().set(String.format(GOTO_IS_NULL_SHORT_LINK_KEY, fullShortUrl), "-", 30, TimeUnit.MINUTES);
+                    ((HttpServletResponse) response).sendRedirect("/page/notfound");
                     return;
                 }
 
@@ -333,4 +344,22 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
 
     }
 
+
+    //获取网站图标
+    @SneakyThrows
+    private String getFavicon(String url) {
+        URL targetUrl = new URL(url);
+        HttpURLConnection connection = (HttpURLConnection) targetUrl.openConnection();
+        connection.setRequestMethod("GET");
+        connection.connect();
+        int responseCode = connection.getResponseCode();
+        if (HttpURLConnection.HTTP_OK == responseCode) {
+            Document document = Jsoup.connect(url).get();
+            Element faviconLink = document.select("link[rel~=(?i)^(shortcut )?icon]").first();
+            if (faviconLink != null) {
+                return faviconLink.attr("abs:href");
+            }
+        }
+        return null;
+    }
 }

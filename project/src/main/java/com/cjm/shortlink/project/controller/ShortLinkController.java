@@ -15,6 +15,7 @@ import jakarta.servlet.ServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -75,7 +76,7 @@ public class ShortLinkController {
      */
 
     @GetMapping("/{short-uri}")
-    public void restoreUrl(@PathVariable("short-uri") String shortUri, ServletRequest request, ServletResponse response) {
+    public void restoreUrl(@PathVariable("short-uri") String shortUri, ServletRequest request, ServletResponse response) throws IOException {
         shortLinkService.restoreUrl(shortUri, request, response);
     }
 
