@@ -13,6 +13,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * 短链接分组controller
+ */
 @RestController
 public class GroupController {
 
