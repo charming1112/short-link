@@ -3,15 +3,13 @@ package com.cjm.shortlink.admin.controller;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.cjm.shortlink.admin.common.convention.result.Results;
 import com.cjm.shortlink.admin.remote.ShortLinkRemoteService;
-import com.cjm.shortlink.admin.remote.dto.req.RecycleBinSaveReqDTO;
-import com.cjm.shortlink.admin.remote.dto.req.ShortLinkPageReqDTO;
-import com.cjm.shortlink.admin.remote.dto.req.ShortLinkRecycleBinPageReqDTO;
+import com.cjm.shortlink.admin.remote.dto.req.*;
 import com.cjm.shortlink.admin.remote.dto.resp.ShortLinkPageRespDTO;
 import com.cjm.shortlink.admin.service.RecycleBinService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import com.cjm.shortlink.admin.common.convention.result.Result;
-import com.cjm.shortlink.admin.remote.dto.req.RecycleBinRecoverReqDTO;
+
 /**
  * 回收站管理-controller层
  */
@@ -47,6 +45,15 @@ public class RecycleBinController {
     @PostMapping("/api/short-link/admin/v1/recycle-bin/recover")
     public Result<Void> recoverRecycleBin(@RequestBody RecycleBinRecoverReqDTO requestParam) {
         shortLinkRemoteService.recoverRecycleBin(requestParam);
+        return Results.success();
+    }
+
+    /**
+     * 移除短链接
+     */
+    @PostMapping("/api/short-link/admin/v1/recycle-bin/remove")
+    public Result<Void> removeRecycleBin(@RequestBody RecycleBinRemoveReqDTO requestParam){
+        shortLinkRemoteService.removeRecycleBin(requestParam);
         return Results.success();
     }
 }
