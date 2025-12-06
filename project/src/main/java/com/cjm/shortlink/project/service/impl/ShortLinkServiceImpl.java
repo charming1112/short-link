@@ -53,6 +53,7 @@ import java.net.URL;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.cjm.shortlink.project.common.constant.RedisKeyConstant.*;
 import static com.cjm.shortlink.project.common.constant.ShortLinkConstant.AMAP_REMOTE_URL;
@@ -84,6 +85,9 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
 
     @Autowired
     private LinkBrowserStatsMapper linkBrowserStatsMapper;
+
+    @Autowired
+    private  LinkAccessLogsMapper linkAccessLogsMapper;
 
     @Value("${short-link.stats.locale.amap-key}")
     private String statsLocaleAmapKey;
@@ -357,16 +361,17 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
         Cookie[] cookies = ((HttpServletRequest) request).getCookies();
 
         try {
+            AtomicReference<String> uv = new AtomicReference<>();
             //uv相同用户（设备）只统计一次，因此可以使用cookie来进行实现
             Runnable addResponseCookieTask=()->{
                 //如果没有cookie，就创建一个，并存起来
-                String uv = UUID.fastUUID().toString();
-                Cookie uvCookie=new Cookie("uv",uv);
+                uv.set(UUID.fastUUID().toString());
+                Cookie uvCookie=new Cookie("uv",uv.get());
                 uvCookie.setMaxAge(60 * 60 * 24 * 30);
                 uvCookie.setPath(StrUtil.sub(fullShortUrl, fullShortUrl.indexOf("/"), fullShortUrl.length()));//保证cookie只在当前短链接下有效
                 ((HttpServletResponse)response).addCookie(uvCookie);
                 uvFirstFlag.set(Boolean.TRUE);
-                stringRedisTemplate.opsForSet().add("short-link:stats:uv:" + fullShortUrl, uv);
+                stringRedisTemplate.opsForSet().add("short-link:stats:uv:" + fullShortUrl, uv.get());
             };
             //假如cookie存在
             if(ArrayUtil.isNotEmpty(cookies)){
@@ -375,6 +380,7 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
                         .findFirst()//取第一个
                         .map(Cookie::getValue)//取value
                         .ifPresentOrElse(each->{//假如value存在就存入redis，并修改uvFirstFlag，如果成功将其存入redis说明是第一次访问flag为true
+                            uv.set(each);
                             Long added = stringRedisTemplate.opsForSet().add("short-link:stats:uv:" + fullShortUrl, each);
                             uvFirstFlag.set(added != null && added > 0L);
                         },addResponseCookieTask);//否则执行第二个参数
@@ -430,8 +436,9 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
                         .build();
                 linkLocaleStatsMapper.shortLinkLocaleState(linkLocaleStatsDO);
                 //短链接操作系统访问
+                String os = LinkUtil.getOs(((HttpServletRequest) request));
                 LinkOsStatsDO linkOsStatsDO = LinkOsStatsDO.builder()
-                        .os(LinkUtil.getOs(((HttpServletRequest) request)))
+                        .os(os)
                         .cnt(1)
                         .gid(gid)
                         .fullShortUrl(fullShortUrl)
@@ -439,14 +446,26 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
                         .build();
                 linkOsStatsMapper.shortLinkOsState(linkOsStatsDO);
                 //短链接浏览器统计
+                String browser = LinkUtil.getBrowser(((HttpServletRequest) request));
                 LinkBrowserStatsDO linkBrowserStatsDO = LinkBrowserStatsDO.builder()
-                        .browser(LinkUtil.getBrowser(((HttpServletRequest) request)))
+                        .browser(browser)
                         .cnt(1)
                         .gid(gid)
                         .fullShortUrl(fullShortUrl)
                         .date(new Date())
                         .build();
                 linkBrowserStatsMapper.shortLinkBrowserState(linkBrowserStatsDO);
+
+                LinkAccessLogsDO linkAccessLogsDO = LinkAccessLogsDO.builder()
+                        .user(uv.get())
+                        .ip(remoteAddr)
+                        .browser(browser)
+                        .os(os)
+                        .gid(gid)
+                        .fullShortUrl(fullShortUrl)
+                        .build();
+                linkAccessLogsMapper.insert(linkAccessLogsDO);
+
             }
         } catch (Throwable ex) {
             log.error("短链接访问量统计异常", ex);
