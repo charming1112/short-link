@@ -34,7 +34,9 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -58,36 +60,22 @@ import java.util.concurrent.atomic.AtomicReference;
 import static com.cjm.shortlink.project.common.constant.RedisKeyConstant.*;
 import static com.cjm.shortlink.project.common.constant.ShortLinkConstant.AMAP_REMOTE_URL;
 
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLinkDO> implements ShortLinkService {
 
-
-    @Autowired
-    private  RBloomFilter<String> shortUriCreateCachePenetrationBloomFilter;;
-
-    @Autowired
-    private ShortLinkGotoMapper shortLinkGotoMapper;
-
-    @Autowired
-    private  StringRedisTemplate stringRedisTemplate;
-
-    @Autowired
-    private  RedissonClient redissonClient;
-
-    @Autowired
-    private LinkAccessStatsMapper linkAccessStatsMapper;
-
-    @Autowired
-    private LinkLocaleStatsMapper linkLocaleStatsMapper;
-
-    @Autowired
-    private LinkOsStatsMapper linkOsStatsMapper;
-
-    @Autowired
-    private LinkBrowserStatsMapper linkBrowserStatsMapper;
-
-    @Autowired
-    private  LinkAccessLogsMapper linkAccessLogsMapper;
+    private final RBloomFilter<String> shortUriCreateCachePenetrationBloomFilter;;
+    private final ShortLinkGotoMapper shortLinkGotoMapper;
+    private final StringRedisTemplate stringRedisTemplate;
+    private final RedissonClient redissonClient;
+    private final LinkAccessStatsMapper linkAccessStatsMapper;
+    private final LinkLocaleStatsMapper linkLocaleStatsMapper;
+    private final LinkOsStatsMapper linkOsStatsMapper;
+    private final LinkBrowserStatsMapper linkBrowserStatsMapper;
+    private final LinkAccessLogsMapper linkAccessLogsMapper;
+    private final LinkDeviceStatsMapper linkDeviceStatsMapper;
+    private final LinkNetworkStatsMapper linkNetworkStatsMapper;
 
     @Value("${short-link.stats.locale.amap-key}")
     private String statsLocaleAmapKey;
@@ -455,7 +443,7 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
                         .date(new Date())
                         .build();
                 linkBrowserStatsMapper.shortLinkBrowserState(linkBrowserStatsDO);
-
+                //向数据库中插入日志
                 LinkAccessLogsDO linkAccessLogsDO = LinkAccessLogsDO.builder()
                         .user(uv.get())
                         .ip(remoteAddr)
@@ -465,6 +453,24 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
                         .fullShortUrl(fullShortUrl)
                         .build();
                 linkAccessLogsMapper.insert(linkAccessLogsDO);
+                //短链接设备统计
+                LinkDeviceStatsDO linkDeviceStatsDO = LinkDeviceStatsDO.builder()
+                        .device(LinkUtil.getDevice(((HttpServletRequest) request)))
+                        .cnt(1)
+                        .gid(gid)
+                        .fullShortUrl(fullShortUrl)
+                        .date(new Date())
+                        .build();
+                linkDeviceStatsMapper.shortLinkDeviceState(linkDeviceStatsDO);
+                //短链接网络统计
+                LinkNetworkStatsDO linkNetworkStatsDO = LinkNetworkStatsDO.builder()
+                        .network(LinkUtil.getNetwork(((HttpServletRequest) request)))
+                        .cnt(1)
+                        .gid(gid)
+                        .fullShortUrl(fullShortUrl)
+                        .date(new Date())
+                        .build();
+                linkNetworkStatsMapper.shortLinkNetworkState(linkNetworkStatsDO);
 
             }
         } catch (Throwable ex) {
