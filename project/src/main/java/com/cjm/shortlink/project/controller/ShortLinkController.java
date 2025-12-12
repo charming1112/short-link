@@ -43,7 +43,7 @@ public class ShortLinkController {
      * @param shortLinkPageReqDTO
      * @return
      */
-    @GetMapping("/api/short-link/admin/v1/page")
+    @GetMapping("/api/short-link/v1/page")
     public Result<IPage<ShortLinkPageRespDTO>> pageShortLink(ShortLinkPageReqDTO shortLinkPageReqDTO){
 
         return Results.success(shortLinkService.pageShortLink(shortLinkPageReqDTO));
@@ -62,7 +62,7 @@ public class ShortLinkController {
      * @param shortLinkUpdateReqDTO
      * @return
      */
-    @PostMapping("/api/short-link/admin/v1/update")
+    @PostMapping("/api/short-link/v1/update")
     public Result<Void> updateShortLink(@RequestBody ShortLinkUpdateReqDTO shortLinkUpdateReqDTO){
         shortLinkService.updateShortLink(shortLinkUpdateReqDTO);
         return Results.success();

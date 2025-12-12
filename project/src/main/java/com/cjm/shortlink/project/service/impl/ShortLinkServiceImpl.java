@@ -4,6 +4,7 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.Week;
 import cn.hutool.core.lang.UUID;
+import cn.hutool.core.text.StrBuilder;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.HttpUtil;
@@ -80,6 +81,10 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
 
     @Value("${short-link.stats.locale.amap-key}")
     private String statsLocaleAmapKey;
+
+    @Value("${short-link.domain.default}")
+    private String createShortLinkDefaultDomain;
+
     /**
      * 创建短链接
      * @param shortLinkCreateReqDTO
@@ -90,10 +95,12 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
     public ShortLinkCreateRespDTO creatShortLink(ShortLinkCreateReqDTO shortLinkCreateReqDTO) {
 
         String shortLinkSuffix = generateSuffix(shortLinkCreateReqDTO);
-        String fullShortUrl= shortLinkCreateReqDTO.getDomain()+"/"+shortLinkSuffix;
-
+        String fullShortUrl = StrBuilder.create(createShortLinkDefaultDomain)
+                .append("/")
+                .append(shortLinkSuffix)
+                .toString();
         ShortLinkDO shortLinkDO = ShortLinkDO.builder()
-                .domain(shortLinkCreateReqDTO.getDomain())
+                .domain(createShortLinkDefaultDomain)
                 .originUrl(shortLinkCreateReqDTO.getOriginUrl())
                 .gid(shortLinkCreateReqDTO.getGid())
                 .createdType(shortLinkCreateReqDTO.getCreatedType())
