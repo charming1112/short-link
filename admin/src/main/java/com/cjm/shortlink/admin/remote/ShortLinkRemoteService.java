@@ -6,8 +6,10 @@ import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.TypeReference;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.cjm.shortlink.admin.common.convention.result.Result;
+import com.cjm.shortlink.admin.dto.req.ShortLinkBatchCreateReqDTO;
 import com.cjm.shortlink.admin.dto.req.ShortLinkGroupStatsAccessRecordReqDTO;
 import com.cjm.shortlink.admin.dto.req.ShortLinkGroupStatsReqDTO;
+import com.cjm.shortlink.admin.dto.resp.ShortLinkBatchCreateRespDTO;
 import com.cjm.shortlink.admin.remote.dto.req.*;
 import com.cjm.shortlink.admin.remote.dto.resp.*;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -175,6 +177,18 @@ public interface ShortLinkRemoteService {
         stringObjectMap.remove("orders");
         stringObjectMap.remove("records");
         String resultBodyStr = HttpUtil.get("http://127.0.0.1:8001/api/short-link/v1/stats/access-record/group", stringObjectMap);
+        return JSON.parseObject(resultBodyStr, new TypeReference<>() {
+        });
+    }
+
+    /**
+     * 批量创建短链接
+     *
+     * @param requestParam 批量创建短链接请求参数
+     * @return 短链接批量创建响应
+     */
+    default Result<ShortLinkBatchCreateRespDTO> batchCreateShortLink(ShortLinkBatchCreateReqDTO requestParam) {
+        String resultBodyStr = HttpUtil.post("http://127.0.0.1:8001/api/short-link/v1/create/batch", JSON.toJSONString(requestParam));
         return JSON.parseObject(resultBodyStr, new TypeReference<>() {
         });
     }

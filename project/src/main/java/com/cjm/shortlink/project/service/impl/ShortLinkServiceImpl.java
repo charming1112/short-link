@@ -21,12 +21,11 @@ import com.cjm.shortlink.project.common.convention.exception.ServiceException;
 import com.cjm.shortlink.project.common.enums.VailDateTypeEnum;
 import com.cjm.shortlink.project.dao.entity.*;
 import com.cjm.shortlink.project.dao.mapper.*;
+import com.cjm.shortlink.project.dto.req.ShortLinkBatchCreateReqDTO;
 import com.cjm.shortlink.project.dto.req.ShortLinkCreateReqDTO;
 import com.cjm.shortlink.project.dto.req.ShortLinkPageReqDTO;
 import com.cjm.shortlink.project.dto.req.ShortLinkUpdateReqDTO;
-import com.cjm.shortlink.project.dto.resp.ShortLinkCreateRespDTO;
-import com.cjm.shortlink.project.dto.resp.ShortLinkGroupCountQueryRespDTO;
-import com.cjm.shortlink.project.dto.resp.ShortLinkPageRespDTO;
+import com.cjm.shortlink.project.dto.resp.*;
 import com.cjm.shortlink.project.service.ShortLinkService;
 import com.cjm.shortlink.project.toolkit.HashUtil;
 import com.cjm.shortlink.project.toolkit.LinkUtil;
@@ -343,6 +342,33 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
         }
 
 
+    }
+
+    @Override
+    public ShortLinkBatchCreateRespDTO batchCreateShortLink(ShortLinkBatchCreateReqDTO requestParam) {
+
+        List<String> describes = requestParam.getDescribes();
+        List<String> originUrls = requestParam.getOriginUrls();
+        ArrayList<ShortLinkBaseInfoRespDTO> result = new ArrayList<>();
+
+        for (int i = 0; i < originUrls.size(); i++) {
+            ShortLinkCreateReqDTO shortLinkCreateReqDTO = BeanUtil.toBean(requestParam, ShortLinkCreateReqDTO.class);
+            shortLinkCreateReqDTO.setDescribe(describes.get(i));
+            shortLinkCreateReqDTO.setOriginUrl(originUrls.get(i));
+
+            ShortLinkCreateRespDTO shortLink = creatShortLink(shortLinkCreateReqDTO);
+            ShortLinkBaseInfoRespDTO linkBaseInfoRespDTO = ShortLinkBaseInfoRespDTO.builder()
+                    .fullShortUrl(shortLink.getFullShortUrl())
+                    .originUrl(shortLink.getOriginUrl())
+                    .describe(describes.get(i))
+                    .build();
+
+            result.add(linkBaseInfoRespDTO);
+        }
+        return ShortLinkBatchCreateRespDTO.builder()
+                .total(result.size())
+                .baseLinkInfos(result)
+                .build();
     }
 
     /**
