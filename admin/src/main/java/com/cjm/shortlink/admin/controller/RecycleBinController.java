@@ -24,13 +24,14 @@ public class RecycleBinController {
      */
     ShortLinkRemoteService shortLinkRemoteService = new ShortLinkRemoteService() {
     };
-
+    /**
+     * 保存回收站
+     */
     @PostMapping("/api/short-link/admin/v1/recycle-bin/save")
-    private Result<Void> saveRecycleBin(@RequestParam RecycleBinSaveReqDTO requestParam) {
+    public Result<Void> saveRecycleBin(@RequestBody RecycleBinSaveReqDTO requestParam) {
         shortLinkRemoteService.saveRecycleBin(requestParam);
         return Results.success();
     }
-
     /**
      * 分页查询回收站短链接
      */

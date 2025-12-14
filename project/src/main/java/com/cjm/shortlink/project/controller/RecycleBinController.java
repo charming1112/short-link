@@ -20,11 +20,9 @@ public class RecycleBinController {
 
     /**
      * 保存回收站
-     * @param requestParam 参数
-     * @return 返回结果
      */
-    @PostMapping("/api/short-link/admin/v1/recycle-bin/save")
-    private Result<Void> saveRecycleBin(@RequestBody RecycleBinSaveReqDTO requestParam) {
+    @PostMapping("/api/short-link/v1/recycle-bin/save")
+    public Result<Void> saveRecycleBin(@RequestBody RecycleBinSaveReqDTO requestParam) {
         recycleBinService.saveRecycleBin(requestParam);
         return Results.success();
     }
